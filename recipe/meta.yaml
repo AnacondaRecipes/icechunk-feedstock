@@ -1,0 +1,83 @@
+{% set name = "icechunk" %}
+{% set version = "2.1.2" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 762daf1ece116903b25c66555bc07bf9756de26f2e7d0cdbdb6d69530aa35f82
+
+build:
+  number: 0
+  # upstream requires-python = ">=3.12"
+  skip: true  # [py<312]
+  script:
+    # pip -vv relays cargo/rustc output containing non-ASCII; the Windows console
+    # default code page raises UnicodeEncodeError and aborts the build.
+    - set PYTHONUTF8=1  # [win]
+    - set PYTHONIOENCODING=utf-8  # [win]
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - icechunk = icechunk._icechunk_python:cli_entrypoint
+
+requirements:
+  build:
+    # aws-lc-sys and zstd-sys compile bundled C sources during the cargo build.
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - {{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    # pyproject.toml [build-system].requires
+    - maturin >=1.7,<2.0
+  run:
+    - python
+    # pyproject.toml [project].dependencies
+    - zarr >=3.1.0
+
+test:
+  imports:
+    - icechunk
+  commands:
+    - pip check
+    - icechunk --help
+    - test -f $SP_DIR/icechunk/_icechunk_python.abi3.so   # [unix]
+    - if not exist %SP_DIR%\icechunk\_icechunk_python.pyd exit 1  # [win]
+  requires:
+    - pip
+
+about:
+  home: https://icechunk.io
+  license: Apache-2.0
+  license_family: Apache
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Transactional storage engine for Zarr designed for use on cloud object storage
+  description: |
+    Icechunk is an open-source, transactional storage engine for tensor / ND-array
+    data designed for use on cloud object storage. Icechunk works together with
+    Zarr, augmenting the Zarr core data model with features that enhance
+    performance, collaboration, and safety in a cloud-computing context:
+    serializable isolation, time travel, data version control, and support for
+    virtual references to data stored in other formats. The storage engine is
+    written in Rust and exposed to Python through PyO3.
+  doc_url: https://icechunk.io
+  dev_url: https://github.com/earth-mover/icechunk
+
+extra:
+  recipe-maintainers:
+    - ianhi
+    - li-em
+    - TomNicholas
+    - andersy005
+    - dcherian
+    - jhamman
+    - mpiannucci
+    - paraseba
+    - rabernat
