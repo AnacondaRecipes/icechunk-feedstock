@@ -26,6 +26,9 @@ build:
 requirements:
   build:
     # aws-lc-sys and zstd-sys compile bundled C sources during the cargo build.
+    # aws-lc-sys can fall back to cmake::Config if its cc builder is not viable
+    # for a target; every current platform takes the cc path, so cmake is not
+    # declared here.
     - {{ compiler('c') }}
     - {{ stdlib('c') }}
     - {{ compiler('rust') }}
@@ -46,6 +49,10 @@ test:
   commands:
     - pip check
     - icechunk --help
+    # maturin takes the version from Cargo.toml, not from this recipe.
+    - python -c "from importlib.metadata import version; assert(version('{{ name }}')=='{{ version }}')"
+    # Exercise the storage engine itself: commit to an in-memory repo and read back.
+    - python -c "import icechunk, zarr; r = icechunk.Repository.create(icechunk.in_memory_storage()); s = r.writable_session('main'); g = zarr.create_group(s.store); a = g.create_array('x', shape=(4,), dtype='int32'); a[:] = [1,2,3,4]; s.commit('smoke'); rs = r.readonly_session(branch='main'); assert zarr.open_group(rs.store, mode='r')['x'][0] == 1"
     - test -f $SP_DIR/icechunk/_icechunk_python.abi3.so   # [unix]
     - if not exist %SP_DIR%\icechunk\_icechunk_python.pyd exit 1  # [win]
   requires:
@@ -72,6 +79,7 @@ about:
 
 extra:
   recipe-maintainers:
+    - xkong-anaconda
     - ianhi
     - li-em
     - TomNicholas
