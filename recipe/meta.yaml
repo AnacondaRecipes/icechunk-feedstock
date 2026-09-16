@@ -1,5 +1,5 @@
 {% set name = "icechunk" %}
-{% set version = "2.1.2" %}
+{% set version = "2.2.0" %}
 
 package:
   name: {{ name }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 762daf1ece116903b25c66555bc07bf9756de26f2e7d0cdbdb6d69530aa35f82
+  sha256: 50b82ae35064c1f77ef44dcdc77c13164b11c457cb802aafc402402fe4f38010
 
 build:
   number: 0
